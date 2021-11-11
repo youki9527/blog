@@ -15,9 +15,9 @@ spring:
   #数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    password: 123456
+    password:  
     url: jdbc:mysql://127.0.0.1:3306/blog?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
-    username: root
+    username:  
   #redis配置
   redis:
     host: localhost
@@ -32,19 +32,18 @@ spring:
 
 #七牛云图片存储服务器
 qiniu:
-  accessKey: -WG4OzNL-7CAtoOK6P7Wedw2tXaIeUCt5t1iMVD3
-  accessSecretKey: 4-eI-oy2sZMWTLgypkiKpYqL8MtLhZb8RKjr_2Ko
+  accessKey:  
+  accessSecretKey:  
 
 #oss阿里对象存储
 oss:
   #OSS连接路径
-  endpoint: oss-cn-chengdu.aliyuncs.com
+  endpoint:  
   #已经在控制台创建的bucket
-  bucketName: zyzservice
+  bucketName:  
   #相应的id和key值
-  accessKeyId: LTAI5tBFHdshzFu8NwbgLU2F
-  accessKeySecret: ksfmoXSPegMqutxpU778hOOA5WezoD
-
+  accessKeyId:  
+  accessKeySecret:  
 #日志配置
 logging:
   level:
