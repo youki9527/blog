@@ -1,0 +1,14 @@
+.DS_Store
+/target/
+docker-compose.yml
+Dockerfile
+/src/main/resources/application-prod.yml
+/src/main/resources/logback-spring-prod.yml
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

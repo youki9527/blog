@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.zyz.blog.dao.mapper.CategoryMapper">
+    <select id="findAllCategoryAndArticleNumber" resultType="com.zyz.blog.vo.CategoryVo">
+        SELECT count(ba.id) articles,bc.id id,bc.avatar avatar,bc.description description,bc.category_name categoryName
+        FROM blog_article ba RIGHT JOIN blog_category bc
+                on ba.category_id=bc.id
+        GROUP BY bc.id
+
+    </select>
+
+    <select id="findCategoryAndArticleNumberById" resultType="com.zyz.blog.vo.CategoryVo">
+        SELECT COUNT(ba.id) AS articles, bc.avatar avatar,bc.category_name categoryName,bc.description description
+        FROM blog_article ba RIGHT JOIN  blog_category bc
+        ON bc.id=ba.category_id
+        WHERE bc.id=#{id}
+    </select>
+
+</mapper>

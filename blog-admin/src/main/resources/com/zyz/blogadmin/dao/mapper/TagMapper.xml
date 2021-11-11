@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--MyBatis配置文件-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zyz.blogadmin.dao.mapper.TagMapper">
+
+    <!--    List<Tag> findTagsByArticleId(Long articleId);-->
+    <select id="findTagsByArticleId" parameterType="long" resultType="com.zyz.blogadmin.dao.po.Tag">
+        select id
+        from blog_tag
+        where id in
+              (select tag_id from blog_article_tag where article_id = #{articleId})
+    </select>
+
+    <!--    IPage<TagVo> listTag(Page<TagVo> page, String tagName);-->
+    <select id="listTag" resultType="com.zyz.blogadmin.vo.TagVo">
+        SELECT count(bat.id) articles,bt.id id,bt.avatar avatar,bt.tag_name tagName
+        FROM blog_article_tag bat RIGHT JOIN blog_tag bt
+        ON bat.tag_id=bt.id
+        <where>
+            <if test="tagName!=null and tagName!=''">
+                <bind name="tagName" value="'%'+tagName+'%'"></bind>
+                bt.tag_name like #{tagName}
+            </if>
+        </where>
+        GROUP BY bt.id
+    </select>
+
+</mapper>

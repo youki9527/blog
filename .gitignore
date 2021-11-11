@@ -1,0 +1,26 @@
+.DS_Store
+/target/
+/blog-admin/target/
+/blog-admin/src/main/resources/application-prod.yml
+/blog-admin/src/main/resources/logback-spring-prod.yml
+/blog-admin/Dockerfile
+
+/blog-api/target/
+/blog-api/docker-compose.yml
+/blog-api/Dockerfile
+/blog-api/src/main/resources/application-prod.yml
+/blog-api/src/main/resources/logback-spring-prod.yml
+
+/blog-app/node_modules/
+/blog-app/dist/
+/blog-app/npm-debug.log*
+/blog-app/yarn-debug.log*
+/blog-app/yarn-error.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

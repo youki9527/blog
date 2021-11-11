@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zyz.blog.dao.mapper.ArticleMapper">
+    <!--    	Integer updateArticleViewCountById(@Param("id") long articleId,@Param("oldCommentCounts") Integer oldCommentCounts);
+    -->
+    <update id="updateArticleCommentCountById">
+        update blog_article ba
+        set ba.comment_counts=ba.comment_counts + 1,
+            ba.object_version=ba.object_version+1
+        where ba.id = #{id} and ba.object_version = #{objectVersion}
+    </update>
+
+    <!--    	List<Article> listArchives();-->
+    <select id="listArchives" resultType="com.zyz.blog.vo.ArchivesVo">
+        select FROM_UNIXTIME(create_date / 1000, '%Y') as year,
+               FROM_UNIXTIME(create_date / 1000, '%m') as month,
+               count(*)                                as count
+        from blog_article
+        group by year, month
+    </select>
+
+
+    <!--    IPage<Article> listArticle(Page<Article> page,-->
+    <!--    Long categoryId,-->
+    <!--    Long tagId,-->
+    <!--    String year,-->
+    <!--    String month);-->
+    <select id="listArticle" resultMap="articleMap">
+        select ba.id,ba.author_id,ba.create_date,ba.summary,ba.comment_counts,ba.view_counts,
+        ba.title,ba.category_id,ba.weight
+        from blog_article ba
+        <where>
+            1=1  and ba.is_published=1
+            <if test="categoryId!=null">
+                and ba.category_id=#{categoryId}
+            </if>
+            <if test="tagId!=null">
+                and ba.id in(select article_id from blog_article_tag where tag_id=#{tagId})
+            </if>
+            <if test="year!=null and year.length>0 and month!=null and month.length>0">
+                and (FROM_UNIXTIME(ba.create_date / 1000, '%Y'))=#{year}
+                and (FROM_UNIXTIME(ba.create_date / 1000, '%m'))=#{month}
+            </if>
+        </where>
+        ORDER BY ba.weight DESC ,ba.create_date DESC
+    </select>
+
+
+    <resultMap id="articleMap" type="com.zyz.blog.dao.po.Article">
+        <id column="id" property="id"></id>
+        <id column="author_id" property="authorId"></id>
+        <id column="create_date" property="createDate"></id>
+        <id column="summary" property="summary"></id>
+        <id column="title" property="title"></id>
+        <id column="view_counts" property="viewCounts"></id>
+        <id column="comment_counts" property="commentCounts"></id>
+        <id column="weight" property="weight"></id>
+        <id column="category_id" property="categoryId"></id>
+    </resultMap>
+</mapper>

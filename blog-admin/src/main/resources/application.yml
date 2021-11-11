@@ -1,0 +1,52 @@
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    #驼峰下划线转换
+    db-column-underline: true
+    db-config:
+      table-prefix: blog_
+server:
+  port: 8889
+
+spring:
+  #服务名称
+  application:
+    name: zyz_blog_admin
+  #数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    password: 
+    url: jdbc:mysql://127.0.0.1:3306/blog?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    username: 
+  #redis配置
+  redis:
+    host: localhost
+    port: 6379
+  #前缀
+  mvc:
+    servlet:
+      path: /blogadmin
+
+
+#七牛云图片存储服务器
+qiniu:
+  accessKey: 
+  accessSecretKey: 
+
+#oss阿里对象存储
+oss:
+  #OSS连接路径
+  endpoint: oss-cn-chengdu.aliyuncs.com
+  #已经在控制台创建的bucket
+  bucketName: 
+  #相应的id和key值，请填写你具体的值，这里不方便展示我自己的。
+  accessKeyId: 
+  accessKeySecret: 
+
+
+#日志配置
+logging:
+  level:
+    root: info
+  config: classpath:logback-spring.xml

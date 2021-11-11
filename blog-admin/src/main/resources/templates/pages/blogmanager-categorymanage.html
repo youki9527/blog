@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>youki博客管理后台</title>
+    <meta name="description" content="youki博客管理后台">
+    <meta name="keywords" content="youki博客管理后台">
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- Theme included stylesheets -->
+    <link href="../plugins/quill/quill.snow.css" rel="stylesheet">
+    <link href="../plugins/quill/quill.bubble.css" rel="stylesheet">
+    <!-- Core build with no theme, formatting, non-essential modules -->
+    <link href="../plugins/quill/quill.core.css" rel="stylesheet">
+    <!-- Main Quill library -->
+    <script src="../plugins/quill/quill.js"></script>
+    <!--        <script src="../plugins/quill/quill.core.js"></script>-->
+</head>
+<body class="hold-transition">
+<div id="app">
+
+    <div class="content-header">
+        <h1>博客管理<small>分类管理</small></h1>
+    </div>
+
+    <div class="app-container">
+        <div class="box">
+            <div class="filter-container">
+                <el-input placeholder="分类名称" v-model="pagination.categoryName" style="width: 200px;"
+                          class="filter-item"></el-input>
+                <el-button @click="findSearchPage()" class="dalfBut">查询</el-button>
+                <el-button type="primary" class="butT" @click="handleCreate('dataAddForm')">新建分类</el-button>
+            </div>
+
+            <el-table size="small" current-row-key="id" :data="dataList" stripe highlight-current-row>
+                <el-table-column align="center" label="序号">
+                    <template slot-scope="scope">
+                        <span>{{(pagination.currentPage - 1) * pagination.pageSize + scope.$index + 1}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="编号" align="center" prop="id">
+                </el-table-column>
+                <el-table-column label="名称" align="center" prop="categoryName">
+                </el-table-column>
+                <el-table-column label="图片" align="center" prop="avatar">
+                </el-table-column>
+                <el-table-column label="描述" align="center" prop="description">
+                </el-table-column>
+                <el-table-column label="文章数量" align="center" prop="articles">
+                </el-table-column>
+                <el-table-column label="操作" align="center">
+                    <template slot-scope="scope">
+                        <el-button type="primary" size="mini" @click="handleUpdate(scope.row,'formData')">编辑
+                        </el-button>
+                        <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <div class="pagination-container">
+                <el-pagination
+                        class="pagiantion"
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                        :current-page="pagination.currentPage"
+                        :page-sizes="[5, 10, 15, 20]"
+                        :page-size="pagination.pageSize"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total="pagination.total">
+                </el-pagination>
+            </div>
+            <!-- 新增分类弹层 -->
+            <div class="add-form">
+                <el-dialog title="新增" :visible.sync="dialogFormVisible">
+                    <el-form ref="dataAddForm" :model="dataAddForm" :rules="addRules" label-position="right"
+                             label-width="100px">
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="名称" prop="categoryName">
+                                    <el-input v-model="formData.categoryName"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="图片" prop="avatar">
+                                    <el-input v-model="formData.avatar"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="描述" prop="description">
+                                    <el-input v-model="formData.description"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="dialogFormVisible = false">取消</el-button>
+                        <el-button type="primary" @click="handleAdd('dataAddForm')">确定</el-button>
+                    </div>
+                </el-dialog>
+            </div>
+            <!-- 编辑分类弹层 -->
+            <div class="add-form">
+                <el-dialog title="编辑" :visible.sync="dialogFormVisibleEdit">
+                    <el-form ref="formData" :model="formData" :rules="addRules" label-position="right"
+                             label-width="100px">
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="名称" prop="categoryName">
+                                    <el-input v-model="formData.categoryName"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="图片" prop="avatar">
+                                    <el-input v-model="formData.avatar"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="描述" prop="description">
+                                    <el-input v-model="formData.description"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="dialogFormVisibleEdit = false">取消</el-button>
+                        <el-button type="primary" @click="handleEdit('formData')">确定</el-button>
+                    </div>
+                </el-dialog>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<!-- 引入组件库 -->
+<script src="../js/vue.js"></script>
+<script src="../plugins/elementui/index.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<script src="../plugins/quill/vue-quill-editor.js"></script>
+<script>
+
+    var vue = new Vue({
+        el: '#app',
+        data: {
+            activeName: 'first',
+            editorOption: {
+                theme: 'snow',
+                boundary: document.body,
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{'header': 1}, {'header': 2}],
+                        [{'list': 'ordered'}, {'list': 'bullet'}],
+                        [{'script': 'sub'}, {'script': 'super'}],
+                        [{'indent': '-1'}, {'indent': '+1'}],
+                        [{'direction': 'rtl'}],
+                        [{'size': ['small', false, 'large', 'huge']}],
+                        [{'header': [1, 2, 3, 4, 5, 6, false]}],
+                        [{'color': []}, {'background': []}],
+                        [{'font': []}],
+                        [{'align': []}],
+                        ['clean'],
+                        ['link', 'image', 'video']
+                    ]
+                },
+                placeholder: 'Insert text here ...',
+                readOnly: false
+            },
+            //分页相关模型数据
+            pagination: {
+                currentPage: 1,//当前页码
+                pageSize: 5,//每页显示的记录数
+                total: 0,//总记录数
+                categoryName: null//查询条件
+            },
+            //当前页要展示的分页列表数据
+            dataList: [],
+            subjectList: [],
+            tableData: {},
+            fbChoiceList: [{
+                content: "",
+            }],
+            //表单数据
+            formData: {},
+            //增加表单是否可见
+            dialogFormVisible: false,
+            dialogFormVisibleEdit: false,
+            dataAddForm: {},
+            //新增编辑分类表单验证
+            addRules: {
+                categoryName: [
+                    {required: true, message: '请输入标签名称', trigger: 'blur'},
+                    {max: 10, message: '不能大于10个字符', trigger: 'blur'}
+                ],
+                avatar: [
+                    {required: true, message: '请输入图片地址', trigger: 'blur'},
+
+                ],
+                description: [
+                    {required: true, message: '请输入标签描述信息', trigger: 'blur'},
+                    {max: 30, message: '不能大于30个字符', trigger: 'blur'}
+                ],
+
+            },
+
+        },
+        //钩子函数，VUE对象初始化完成后自动执行
+        created() {
+            this.findPage();
+        },
+        methods: {
+            handleAvatarSuccess() {
+
+            },
+            beforeAvatarUpload() {
+
+            },
+            // 弹出编辑窗口
+            handleUpdate(row, formName) {
+                this.resetForm(formName);
+                this.dialogFormVisibleEdit = true;
+                this.formData = row;
+                this.imgurl=this.formData.avatar;
+            },
+            //编辑
+            handleEdit(formName) {
+                let that = this;
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        axios.post("/category/update", this.formData).then((res) => {
+                            if (res.data.success) {
+                                that.$message({
+                                    message: '恭喜你，编辑成功',
+                                    type: 'success'
+                                });
+                                that.dialogFormVisibleEdit = false;
+                                that.findPage();
+                            } else {
+                                that.$message({
+                                    message: res.data.msg,
+                                    type: 'error'
+                                });
+                            }
+                        }).catch((error) => {
+                            if (error == "Error: Request failed with status code 403") {
+                                that.$message.error("无操作权限");
+                            }
+                        });
+                    } else {
+                        that.$message.warning("请检查信息是否正确")
+                        return false;
+                    }
+                });
+            },
+            // 弹出添加窗口
+            handleCreate(formName) {
+                this.resetForm(formName);
+                this.dialogFormVisible = true;
+            },
+            //添加
+            handleAdd(formName) {
+                let that = this;
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        axios.post("/category/add", this.dataAddForm).then((res) => {
+                            if (res.data.success) {
+                                that.$message({
+                                    message: '恭喜你，添加成功',
+                                    type: 'success'
+                                });
+                                that.dialogFormVisible = false;
+                                that.findPage();
+                            } else {
+                                that.$message({
+                                    message: res.data.msg,
+                                    type: 'error'
+                                });
+                            }
+                        }).catch((error) => {
+                            if (error == "Error: Request failed with status code 403") {
+                                that.$message.error("无操作权限");
+                            }
+                        });
+                    } else {
+                        that.$message.warning("请检查信息是否正确")
+                        return false;
+                    }
+                });
+
+            },
+            //删除
+            handleDelete(row) {
+                let that = this;
+                this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios.get("/category/delete/" + row.id).then((res) => {
+                        if (res.data.success) {
+                            that.$message.success("删除成功");
+                            that.findPage();
+                        } else {
+                            that.$message({
+                                message: res.data.msg,
+                                type: 'error'
+                            });
+                        }
+                    }).catch((error) => {
+                        if (error == "Error: Request failed with status code 403") {
+                            that.$message.error("无操作权限");
+                        }
+                    })
+                }).catch(() => {
+                    that.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+
+            },
+            //查询
+            findSearchPage() {
+                this.pagination.currentPage = 1;
+                this.findPage();
+            },
+            //分页查询
+            findPage() {
+                let that = this;
+                axios.post("/category/categoryList", this.pagination).then((res) => {
+                    if (res.data.success) {
+                        that.dataList = res.data.data.list;
+                        that.pagination.total = res.data.data.total;
+                    } else {
+                        that.$message({
+                            message: res.data.msg,
+                            type: 'error'
+                        });
+                    }
+                }).catch((error) => {
+                    if (error == "Error: Request failed with status code 403") {
+                        that.$message.error("无操作权限");
+                    }
+                });
+            },
+            //切换页码
+            handleCurrentChange(currentPage) {
+                this.pagination.currentPage = currentPage;
+                this.findPage();
+            },
+            //切换页面大小
+            handleSizeChange(pageSize) {
+                this.pagination.pageSize = pageSize;
+                this.findPage();
+            },
+            //重置
+            resetForm(formName) {
+                if (this.$refs[formName] !== undefined) {
+                    this.$refs[formName].resetFields();
+                }
+            },
+
+        }
+    });
+    Vue.use(window.VueQuillEditor);
+</script>
+</html>

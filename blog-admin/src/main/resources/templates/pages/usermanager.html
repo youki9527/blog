@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>youki博客管理后台</title>
+    <meta name="description" content="youki博客管理后台">
+    <meta name="keywords" content="youki博客管理后台台">
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- Theme included stylesheets -->
+    <link href="../plugins/quill/quill.snow.css" rel="stylesheet">
+    <link href="../plugins/quill/quill.bubble.css" rel="stylesheet">
+    <!-- Core build with no theme, formatting, non-essential modules -->
+    <link href="../plugins/quill/quill.core.css" rel="stylesheet">
+    <!-- Main Quill library -->
+    <script src="../plugins/quill/quill.js"></script>
+    <!--        <script src="../plugins/quill/quill.core.js"></script>-->
+    <style type="text/css">
+        .avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 1%;
+            display: block;
+        }
+    </style>
+</head>
+
+<body class="hold-transition">
+<div id="app">
+
+    <div class="content-header">
+        <h1>用户管理<small>系统用户管理</small></h1>
+    </div>
+    <div class="app-container">
+        <div class="box">
+            <div class="filter-container">
+                <el-input placeholder="账户" v-model="pagination.queryString" style="width: 200px;"
+                          class="filter-item"></el-input>
+                <el-button @click="findSearchPage()" class="dalfBut">查询</el-button>
+                <el-button type="primary" class="butT" @click="handleCreate('addUserForm')">新建游客</el-button>
+            </div>
+            <!--表单数据-->
+            <el-table size="small"
+                      current-row-key="id"
+                      :data="dataList"
+                      ref="userListTable"
+                      @selection-change="handleSelectionChange"
+                      stripe highlight-current-row>
+                <el-table-column
+                        type="selection"
+                        width="55">
+                </el-table-column>
+                <el-table-column align="center" label="序号">
+                    <template slot-scope="scope">
+                        <span>{{(pagination.currentPage - 1) * pagination.pageSize + scope.$index + 1}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="编号" align="center" prop="id">
+                </el-table-column>
+                <el-table-column label="账号" align="center" prop="account">
+                </el-table-column>
+                <el-table-column label="昵称" align="center" prop="nickname">
+                </el-table-column>
+                <el-table-column label="头像" align="center" prop="avatar">
+                    <template slot-scope="scope">
+                        <img :src="scope.row.avatar" class="avatar"></img>
+                    </template>
+                </el-table-column>
+                <el-table-column label="注册日期" align="center" prop="createDate">
+                </el-table-column>
+                <el-table-column label="最近一次登录时间" align="center" prop="lastLogin">
+                </el-table-column>
+                <el-table-column label="禁言" align="center">
+                    <template slot-scope="scope">
+                        <el-switch
+                                v-model="scope.row.status"
+                                active-color="#DC143C"
+                                active-text="是"
+                                inactive-text="否"
+                                @change="changeSwitch($event,scope.row.id)"
+                                active-value="禁言"
+                                inactive-value="正常">
+                        </el-switch>
+                    </template>
+                </el-table-column>
+                <el-table-column label="是否已注销" align="center" prop="deleted">
+                </el-table-column>
+                <el-table-column label="邮箱" align="center" prop="email">
+                </el-table-column>
+                <el-table-column label="移动电话" align="center" prop="mobilePhoneNumber">
+                </el-table-column>
+                <el-table-column label="操作" align="center">
+                    <template slot-scope="scope">
+                        <el-button type="primary" size="mini" @click="handleUpdate(scope.row,'formData')">编辑</el-button>
+                        <el-button type="primary" type="danger" size="mini" @click="handleWriteOff(scope.row)">注销
+                        </el-button>
+                        <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div style="margin-top: 20px">
+                <el-button v-show="multipleSelectionFlag==true" @click="toggleSelection()">取消选择</el-button>
+                <el-button type="danger" v-show="multipleSelectionFlag==true" @click="multipleDelete()">批量删除</el-button>
+            </div>
+            <div class="pagination-container">
+                <el-pagination
+                        class="pagiantion"
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                        :current-page="pagination.currentPage"
+                        :page-sizes="[5, 10, 15, 20]"
+                        :page-size="pagination.pageSize"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total="pagination.total">
+                </el-pagination>
+            </div>
+            <!-- 新增游客弹层 -->
+            <div class="add-form">
+                <el-dialog title="新增" :visible.sync="dialogAddUserFormVisible">
+                    <el-form ref="addUserForm" :model="addUserForm" :rules="addRules" label-position="right"
+                             label-width="100px">
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="账号" prop="account">
+                                    <el-input v-model="addUserForm.account"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="昵称" prop="nickname">
+                                    <el-input v-model="addUserForm.nickname"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="密码" prop="password">
+                                    <el-input type="password" v-model="addUserForm.password"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="确认密码" prop="password">
+                                    <el-input type="password" v-model="addUserForm.surePassword"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="dialogAddUserFormVisible= false">取消</el-button>
+                        <el-button type="primary" @click="handleAdd('addUserForm')">确定</el-button>
+                    </div>
+                </el-dialog>
+            </div>
+            <!-- 编辑系统用户弹层 -->
+            <div class="add-form">
+                <el-dialog title="编辑" :visible.sync="dialogFormVisibleEdit">
+                    <el-form ref="formData" :model="formData" :rules="userInfoRules" label-position="right"
+                             label-width="100px">
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="用户头像" prop="avatar">
+                                    <el-input v-model="formData.avatar"/>
+                                    <img src="formData.avatar" alt="" class="avatar">
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="账号" prop="account">
+                                    <el-input disabled v-model="formData.account"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="昵称" prop="nickname">
+                                    <el-input v-model="formData.nickname"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="注册时间" prop="createDate">
+                                    <el-input v-model="formData.createDate"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="最近一次登录时间" prop="lastLogin">
+                                    <el-input v-model="formData.lastLogin"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="手机号码" prop="mobilePhoneNumber">
+                                    <el-input v-model="formData.mobilePhoneNumber"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col>
+                                <el-form-item label="邮箱" prop="email">
+                                    <el-input v-model="formData.email"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="dialogFormVisibleEdit = false">取消</el-button>
+                        <el-button type="primary" @click="handleEdit('formData')">确定</el-button>
+                    </div>
+                </el-dialog>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<!-- 引入组件库 -->
+<script src="../js/vue.js"></script>
+<script src="../plugins/elementui/index.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<script src="../plugins/quill/vue-quill-editor.js"></script>
+<script>
+
+    var vue = new Vue({
+            el: '#app',
+            data() {
+                //自定义个人信息修改验证
+                var checkPhone = (rule, value, callback) => {
+                    const phoneReg = /^1[3|4|5|7|8][0-9]{9}$/
+                    if (!value) {
+                        return callback(new Error('电话号码不能为空'))
+                    }
+                    setTimeout(() => {
+                        if (!Number.isInteger(+value)) {
+                            callback(new Error('请输入数字值'))
+                        } else {
+                            if (phoneReg.test(value)) {
+                                callback()
+                            } else {
+                                callback(new Error('电话号码格式不正确'))
+                            }
+                        }
+                    }, 100)
+                }
+                var checkEmail = (rule, value, callback) => {
+                    const mailReg = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(.[a-zA-Z0-9_-])+/
+                    if (!value) {
+                        return callback(new Error('邮箱不能为空'))
+                    }
+                    setTimeout(() => {
+                        if (mailReg.test(value)) {
+                            callback()
+                        } else {
+                            callback(new Error('请输入正确的邮箱格式'))
+                        }
+                    }, 100)
+                }
+                //自定义新增游客验证
+                var validateAccount = (rule, value, callback) => {
+                    const mailReg = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(.[a-zA-Z0-9_-])+/
+                    const phoneReg = /^1[3|4|5|7|8][0-9]{9}$/
+                    if (!value) {
+                        return callback(new Error('账号不能为空'))
+                    }
+                    setTimeout(() => {
+                        // Number.isInteger是es6验证数字是否为整数的方法,但是我实际用的时候输入的数字总是识别成字符串
+                        // 所以我就在前面加了一个+实现隐式转换
+                        if (phoneReg.test(value) || mailReg.test(value)) {
+                            callback()
+                        } else {
+                            callback(new Error('电话号码或者邮箱格式不正确'))
+                        }
+                    }, 100)
+                };
+                var validatePass = (rule, value, callback) => {
+                    if (value === '') {
+                        callback(new Error('密码不能为空'));
+                    } else if (value.length > 20) {
+                        callback(new Error('密码不能超过20位哦'));
+                    } else {
+                        if (this.addUserForm.surePassword !== '') {
+                            this.$refs.addUserForm.validateField('surePassword');
+                        }
+                        callback();
+                    }
+                };
+                var validateSurePass = (rule, value, callback) => {
+                    if (value === '') {
+                        callback(new Error('请输入再次输入密码'));
+                    } else if (value !== this.addUserForm.password) {
+                        callback(new Error('两次输入密码不一致!'));
+                    } else {
+                        callback();
+                    }
+                };
+                return {
+                    activeName: 'first',
+                    editorOption: {
+                        theme: 'snow',
+                        boundary: document.body,
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline', 'strike'],
+                                ['blockquote', 'code-block'],
+                                [{'header': 1}, {'header': 2}],
+                                [{'list': 'ordered'}, {'list': 'bullet'}],
+                                [{'script': 'sub'}, {'script': 'super'}],
+                                [{'indent': '-1'}, {'indent': '+1'}],
+                                [{'direction': 'rtl'}],
+                                [{'size': ['small', false, 'large', 'huge']}],
+                                [{'header': [1, 2, 3, 4, 5, 6, false]}],
+                                [{'color': []}, {'background': []}],
+                                [{'font': []}],
+                                [{'align': []}],
+                                ['clean'],
+                                ['link', 'image', 'video']
+                            ]
+                        },
+                        placeholder: 'Insert text here ...',
+                        readOnly: false
+                    },
+                    //分页相关模型数据
+                    pagination: {
+                        currentPage: 1,//当前页码
+                        pageSize: 5,//每页显示的记录数
+                        total: 0,//总记录数
+                        queryString: null//查询条件
+                    },
+                    //当前页要展示的分页列表数据
+                    dataList: [],
+                    subjectList: [],
+                    tableData: {},
+                    fbChoiceList: [{
+                        content: "",
+                    }],
+                    //编辑用户数据表单
+                    formData: {},
+                    dialogFormVisibleEdit: false,
+                    //校验规则
+                    userInfoRules: {
+                        mobilePhoneNumber: [
+                            {validator: checkPhone, trigger: 'blur'},
+                        ],
+                        email: [
+                            {validator: checkEmail, trigger: 'blur'},
+                        ],
+                        nickname: [
+                            {required: true, message: '请输入昵称', trigger: 'blur'},
+                            {max: 10, message: '不能大于10个字符', trigger: 'blur'}
+                        ],
+                    },
+                    //增加表单是否可见
+                    dialogAddUserFormVisible: false,
+                    //新增游客表单
+                    addUserForm: {
+                        account: '',
+                        nickname: '',
+                        password: '',
+                        surePassword: '',
+
+                    },
+                    //新增游客参数
+                    addUserParams: {
+                        account: '',
+                        nickname: '',
+                        password: '',
+                    },
+                    //新增游客表单验证
+                    addRules: {
+                        account: [
+                            {validator: validateAccount, trigger: 'blur'},
+                        ],
+                        nickname: [
+                            {required: true, message: '请输入昵称', trigger: 'blur'},
+                            {max: 10, message: '不能大于10个字符', trigger: 'blur'}
+                        ],
+                        password: [
+                            {validator: validatePass, trigger: 'blur'},
+
+                        ],
+                        surePassword: [
+                            {validator: validateSurePass, trigger: 'blur'},
+                        ]
+                    },
+                    //多选框
+                    multipleSelection: [],
+                    //多选标志
+                    multipleSelectionFlag: false
+                }
+
+            },
+            //钩子函数，VUE对象初始化完成后自动执行
+            created() {
+                this.findPage();
+            },
+            methods: {
+                handleAvatarSuccess() {
+
+                },
+                beforeAvatarUpload() {
+
+                },
+                //改变用户状态
+                changeSwitch: function (value, id) {
+                    console.log(value);
+                    console.log(id);
+                    let params = {
+                        id: id,
+                        status: value
+                    }
+                    axios.post('/user/updatestatus/', params).then((res) => {
+                        if (res.data.success) {
+                            this.$message.success("更新用户状态成功");
+                            this.findPage();
+                        } else {
+                            this.$message.error(res.data.msg);
+                        }
+                    }).catch((error) => {
+                        if (error == "Error: Request failed with status code 403") {
+                            this.$message.error("无操作权限");
+                        }
+                    })
+                },
+                //弹出编辑窗口
+                handleUpdate(row,formName) {
+                    this.resetForm(formName);
+                    this.dialogFormVisibleEdit = true;
+                    this.formData = row;
+                },
+                //编辑
+                handleEdit(formName) {
+                    this.$refs[formName].validate((valid) => {
+                        if (valid) {
+                            axios.post("/user/update", this.formData).then((res) => {
+                                if (res.data.success) {
+                                    this.$message({
+                                        message: '恭喜你，编辑成功',
+                                        type: 'success'
+                                    });
+                                    this.dialogFormVisibleEdit = false;
+                                    this.findPage();
+                                } else {
+                                    this.$message({
+                                        message: res.data.msg,
+                                        type: 'error'
+                                    });
+                                }
+                            }).catch((error) => {
+                                if (error == "Error: Request failed with status code 403") {
+                                    this.$message.error("无操作权限");
+                                }
+                            });
+                        } else {
+                            that.$message.warning("请检查信息是否正确")
+                            return false;
+                        }
+                    })
+                },
+                //弹出添加窗口
+                handleCreate(formName) {
+                    //重置
+                   this.resetForm(formName)
+                    this.dialogAddUserFormVisible = true;
+                },
+                //添加
+                handleAdd(formName) {
+                    let that = this;
+                    this.addUserParams.account = that.addUserForm.account;
+                    this.addUserParams.nickname = that.addUserForm.nickname;
+                    this.addUserParams.password = that.addUserForm.password;
+                    this.$refs[formName].validate((valid) => {
+                        if (valid) {
+                            axios.post("/user/add", that.addUserParams).then((res) => {
+                                if (res.data.success) {
+                                    that.$message({
+                                        message: '恭喜你，添加游客成功',
+                                        type: 'success'
+                                    });
+                                    that.dialogAddUserFormVisible = false;
+                                    that.findPage();
+                                } else {
+                                    that.$message({
+                                        message: res.data.msg,
+                                        type: 'error'
+                                    });
+                                }
+                            }).catch((error) => {
+                                if (error == "Error: Request failed with status code 403") {
+                                    that.$message.error("无操作权限");
+                                }
+                            });
+                        } else {
+                            that.$message.warning("请检查信息是否正确")
+                            return false;
+                        }
+                    });
+
+                },
+                //单个删除
+                handleDelete(row) {
+                    this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        axios.get("/user/delete/" + row.id).then((res) => {
+                            if (res.data.success) {
+                                this.$message.success("删除成功");
+                                this.findPage();
+                            } else {
+                                this.$message.error(res.data.msg);
+                                this.findPage();
+                            }
+                        }).catch((error) => {
+                            if (error == "Error: Request failed with status code 403") {
+                                this.$message.error("无操作权限");
+                            }
+                        })
+                    }).catch(() => {
+                        this.$message({
+                            type: 'info',
+                            message: '已取消删除'
+                        });
+                    });
+                },
+                //批量删除
+                multipleDelete() {
+                    let checkArr = this.multipleSelection;   // multipleSelection存储了勾选到的数据
+                    let ids = [];
+                    let that = this;
+                    checkArr.forEach(function (item) {
+                        ids.push(item.id);       // 添加所有需要删除数据的id到一个数组，post提交过去
+                    });
+                    this.$confirm('此操作将永久删除这些用户, 是否继续?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        axios.post("/user/delete/userList" ,ids).then((res) => {
+                            if (res.data.success) {
+                                this.$message.success("删除成功");
+                                this.findPage();
+                            } else {
+                                this.$message.success(res.data.msg);
+                                this.findPage();
+                            }
+                        }).catch((error) => {
+                            if (error == "Error: Request failed with status code 403") {
+                                this.$message.error("无操作权限");
+                            }
+                        })
+                    }).catch(() => {
+                        this.$message({
+                            type: 'info',
+                            message: '已取消注销'
+                        });
+                    });
+                },
+                //多选
+                handleSelectionChange(val) {
+                    this.multipleSelection = val;
+                    this.multipleSelectionFlag = true;
+                    if (this.multipleSelection.length == 0) {
+                        // 如不进行判断则勾选完毕后批量删除按钮还是会在
+                        this.multipleSelectionFlag = false;
+                    }
+                },
+                //取消多选
+                toggleSelection(rows) {
+                    if (rows) {
+                        rows.forEach(row => {
+                            this.$refs.userListTable.toggleRowSelection(row);
+                        });
+                    } else {
+                        this.$refs.userListTable.clearSelection();
+                    }
+                    console.log(this.multipleSelection)
+                },
+                //注销
+                handleWriteOff(row) {
+                    this.$confirm('此操作将注销该用户, 是否继续?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        axios.get("/user/writeoff/" + row.id).then((res) => {
+                            if (res.data.success) {
+                                this.$message.success("注销成功");
+                                this.findPage();
+                            } else {
+                                this.$message.error(res.data.msg);
+                                this.findPage();
+                            }
+                        }).catch((error) => {
+                            if (error == "Error: Request failed with status code 403") {
+                                this.$message.error("无操作权限");
+                            }
+                        })
+                    }).catch(() => {
+                        this.$message({
+                            type: 'info',
+                            message: '已取消注销'
+                        });
+                    });
+                },
+                findSearchPage() {
+                    this.pagination.currentPage = 1;
+                    this.findPage();
+                },
+                //分页查询
+                findPage() {
+                    axios.post("/user/userList", this.pagination).then((res) => {
+                        if (res.data.success) {
+                            this.dataList = res.data.data.list;
+                            this.pagination.total = res.data.data.total;
+                        } else {
+                            this.$message.error(res.data.msg);
+                        }
+                    }).catch((error) => {
+                        if (error == "Error: Request failed with status code 403") {
+                            this.$message.error("无操作权限");
+                        }
+                    });
+                },
+                //切换页码
+                handleCurrentChange(currentPage) {
+                    this.pagination.currentPage = currentPage;
+                    this.findPage();
+                },
+                //切换页面大小
+                handleSizeChange(pageSize) {
+                    this.pagination.pageSize = pageSize;
+                    this.findPage();
+                },
+                //重置
+                resetForm(formName) {
+                    if ( this.$refs[formName]!==undefined){
+                        this.$refs[formName].resetFields();
+                    }
+
+                },
+            }
+        })
+    ;
+    Vue.use(window.VueQuillEditor);
+</script>
+</html>

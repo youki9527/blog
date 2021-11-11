@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.zyz.blog.dao.mapper.TagMapper">
+    <!--    	List<Tag> findTagsByArticleId(Long articleId);
+-->
+    <select id="findTagsByArticleId" parameterType="long" resultType="com.zyz.blog.dao.po.Tag">
+        select id, tag_name as tagName
+        from blog_tag
+        where id in
+              (select tag_id from blog_article_tag where article_id = #{articleId})
+    </select>
+
+    <!--    List<Long> findHotsTagIds(int limit);-->
+    <select id="findHotsTagIds" parameterType="int" resultType="java.lang.Long">
+        select tag_id
+        from blog_article_tag
+        group by tag_id
+        order by count(*) desc
+        limit #{limit}
+    </select>
+
+    <!--    List<Tag> findTagsByIds(List<Long> tagIds);-->
+    <select id="findTagsByIds" parameterType="list" resultType="com.zyz.blog.dao.po.Tag">
+        select id, tag_name as tagName
+        from blog_tag
+        where id in
+        <foreach collection="tagIds" item="tagId" separator="," open="(" close=")">
+            #{tagId}
+        </foreach>
+    </select>
+
+
+    <!--    List<TagVo> findAllTagAndArticleNumber();-->
+    <select id="findAllTagAndArticleNumber" resultType="com.zyz.blog.vo.TagVo">
+        SELECT count(bat.id) articles,bt.id id,bt.avatar avatar,bt.tag_name tagName
+        FROM blog_article_tag bat RIGHT JOIN blog_tag bt
+        ON bat.tag_id=bt.id
+        GROUP BY bt.id
+    </select>
+
+    <select id="findTagAndArticleNumberById" resultType="com.zyz.blog.vo.TagVo">
+        SELECT count(bat.id) articles,bt.avatar avatar,bt.tag_name tagName
+        FROM blog_article_tag bat RIGHT JOIN blog_tag bt
+        ON bat.tag_id=bt.id
+        where bt.id=#{id}
+    </select>
+</mapper>

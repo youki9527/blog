@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>youki博客管理后台</title>
+    <meta name="description" content="youki博客管理后台">
+    <meta name="keywords" content="youki博客管理后台">
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+
+
+    <!-- Theme included stylesheets -->
+    <link href="../plugins/quill/quill.snow.css" rel="stylesheet">
+    <link href="../plugins/quill/quill.bubble.css" rel="stylesheet">
+
+    <!-- Core build with no theme, formatting, non-essential modules -->
+    <link href="../plugins/quill/quill.core.css" rel="stylesheet">
+    <!-- Main Quill library -->
+    <script src="../plugins/quill/quill.js"></script>
+    <!--        <script src="../plugins/quill/quill.core.js"></script>-->
+</head>
+<body class="hold-transition">
+<div id="app">
+
+    <div class="content-header">
+        <h1>博客管理<small>文章管理</small></h1>
+    </div>
+
+    <div class="app-container">
+        <div class="box">
+            <!--@clear="delValue('pagination.categoryId')"-->
+            <div class="filter-container">
+                <el-input placeholder="文章标题" v-model="pagination.title" style="width: 200px;"
+                          class="filter-item"></el-input>
+                <el-select
+                        v-model="pagination.categoryId"
+                        clearable
+                        ref="categoryId"
+                        placeholder="请选择分类名称">
+                    <el-option v-for="item in categorys"
+                               :key="item.id"
+                               :label="item.categoryName"
+                               :value="item.id">
+                    </el-option>
+                </el-select>
+                <el-date-picker
+                        v-model="valueDate"
+                        unlink-panels
+                        :picker-options="pickerOptions"
+                        type="daterange"
+                        range-separator="至"
+                        format="yyyy 年 MM 月 dd 日"
+                        value-format="yyyy-MM-dd"
+                        start-placeholder="开始日期"
+                        end-placeholder="结束日期">
+                </el-date-picker>
+                <el-button @click="findSearchPage()" class="dalfBut">查询</el-button>
+            </div>
+            <el-table size="small" current-row-key="id" :data="dataList" stripe highlight-current-row>
+                <el-table-column align="center" label="序号">
+                    <template slot-scope="scope">
+                        <span>{{(pagination.currentPage - 1) * pagination.pageSize + scope.$index + 1}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="编号" align="center" prop="id">
+                </el-table-column>
+                <el-table-column label="标题" align="center" prop="title">
+                </el-table-column>
+                <el-table-column label="简介" align="center" prop="summary">
+                </el-table-column>
+                <el-table-column label="作者" align="center" prop="author.username">
+                </el-table-column>
+                <el-table-column label="创建日期" align="center" prop="createDate">
+                </el-table-column>
+                <el-table-column label="更新日期" align="center" prop="updateDate">
+                </el-table-column>
+                <el-table-column label="浏览数量" align="center" prop="viewCounts">
+                </el-table-column>
+                <el-table-column label="评论数量" align="center" prop="commentCounts">
+                </el-table-column>
+                <el-table-column label="是否置顶" align="center">
+                    <template slot-scope="scope">
+                        <!--这里 :active-value前面必须有: 表示为number-->
+                        <el-switch
+                                v-model="scope.row.weight"
+                                active-text="是" inactive-text="否"
+                                @change="changeSwitch($event,scope.row.id)"
+                                :active-value="1"
+                                :inactive-value="0">
+                        </el-switch>
+                    </template>
+                </el-table-column>
+                <el-table-column label="分类" align="center" prop="category">
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row.category.id" placeholder="请选择">
+                            <el-option v-for="item in categorys"
+                                       :key="item.id"
+                                       :label="item.categoryName"
+                                       :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" align="center">
+                    <template slot-scope="scope">
+                        <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">编辑</el-button>
+                        <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div class="pagination-container">
+                <el-pagination
+                        class="pagiantion"
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                        :current-page="pagination.currentPage"
+                        :page-sizes="[5, 10, 15, 20]"
+                        :page-size="pagination.pageSize"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total="pagination.total">
+                </el-pagination>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<!-- 引入组件库 -->
+<script src="../js/vue.js"></script>
+<script src="../plugins/elementui/index.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<script src="../plugins/quill/vue-quill-editor.js"></script>
+<script>
+
+    const that = this;
+    var vue = new Vue({
+        el: '#app',
+        data: {
+            editorOption: {
+                theme: 'snow',
+                boundary: document.body,
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{'header': 1}, {'header': 2}],
+                        [{'list': 'ordered'}, {'list': 'bullet'}],
+                        [{'script': 'sub'}, {'script': 'super'}],
+                        [{'indent': '-1'}, {'indent': '+1'}],
+                        [{'direction': 'rtl'}],
+                        [{'size': ['small', false, 'large', 'huge']}],
+                        [{'header': [1, 2, 3, 4, 5, 6, false]}],
+                        [{'color': []}, {'background': []}],
+                        [{'font': []}],
+                        [{'align': []}],
+                        ['clean'],
+                        ['link', 'image', 'video']
+                    ]
+                },
+                placeholder: 'Insert text here ...',
+                readOnly: false
+            },
+            //标签id和name
+            tags: {},
+            //分类id和name
+            categorys: {},
+            //当前页要展示的分页列表数据
+            dataList: [
+                {
+                    id: 1,
+                    title: '测试标题',
+                    summary: '概述',
+                    createDate: '2021.7.8',
+                    viewCounts: 100,
+                    commentCounts: 10000,
+                    weight: true,
+                    category: 2
+                }
+            ],
+            valueDate: '',
+            pickerOptions: {
+                shortcuts: [{
+                    text: '最近一周',
+                    onClick(picker) {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }, {
+                    text: '最近一个月',
+                    onClick(picker) {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }, {
+                    text: '最近三个月',
+                    onClick(picker) {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }]
+            },
+            //分页相关模型数据
+            pagination: {
+                currentPage: 1,//当前页码
+                pageSize: 5,//每页显示的记录数
+                total: 0,//总记录数
+                categoryId: '',//查询条件
+                title: '',
+                createStartDate: '',
+                createEndDate: '',
+            },
+            subjectList: [],
+            tableData: {},
+            fbChoiceList: [{
+                content: "",
+            }],
+        },
+        //钩子函数，VUE对象初始化完成后自动执行
+        created() {
+            this.findPage();
+            this.getCategorys();
+            this.getTags();
+        },
+        methods: {
+            handleAvatarSuccess() {
+
+            },
+            beforeAvatarUpload() {
+
+            },
+            //查询按钮
+            findSearchPage() {
+                this.pagination.currentPage = 1;
+                //没有选择开始结束日期
+                console.log(this.valueDate)
+                console.log(typeof this.valueDate)
+                //在第一次没有选择前this.valueDate的类型为String类型
+                //在第二次选择清空所选类型后，this.valueDate变为object类型
+                if (this.valueDate==''||this.valueDate==null) {
+                    console.log("没有选择")
+                    console.log(this.pagination.createStartDate)
+                    console.log(this.pagination.createEndDate)
+                } else {
+                    console.log("选择了")
+                    this.pagination.createStartDate = this.valueDate[0] + " 00:00:00";
+                    this.pagination.createEndDate = this.valueDate[1] + " 23:59:59";
+                    console.log(this.pagination.createStartDate)
+                    console.log(this.pagination.createEndDate)
+                }
+                this.findPage();
+            },
+            //分页查询
+            findPage() {
+                axios.post("/article/articleList", this.pagination).then((res) => {
+                    if (res.data.success) {
+                        this.dataList = res.data.data.list;
+                        this.pagination.total = res.data.data.total;
+                    }
+                }).catch((error) => {
+                    if (error == "Error: Request failed with status code 403") {
+                        this.$message.error("无操作权限");
+                    }
+                });
+            },
+            //切换页码
+            handleCurrentChange(currentPage) {
+                this.pagination.currentPage = currentPage;
+                this.findPage();
+            },
+            //切换页面大小
+            handleSizeChange(pageSize) {
+                this.pagination.pageSize = pageSize;
+                this.findPage();
+            },
+            //改变文章置顶
+            changeSwitch: function (value, id) {
+                console.log(value);
+                console.log(id);
+                let params = {
+                    id: id,
+                    weight: value
+                }
+                axios.post('/article/updateweight/', params).then((res) => {
+                    if (res.data.success) {
+                        this.$message.success("更新置顶信息成功");
+                        this.findPage();
+                    } else {
+                        this.$message.error(res.data.msg);
+                    }
+                }).catch((error) => {
+                    if (error == "Error: Request failed with status code 403") {
+                        this.$message.error("无操作权限");
+                    }
+                })
+
+            },
+            // 重置表单
+            resetForm() {
+                this.formData = {};
+                this.subjects = [];
+                this.tableData = {};
+            },
+            //跳转到
+            handleUpdate(row) {
+                console.log(row.id);
+                location.href = "blogmanager-writearticle.html?id=" + row.id;
+            },
+            //删除
+            handleDelete(row) {
+                this.$confirm('此操作将永久删除该文章, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios.get("/article/delete/" + row.id).then((res) => {
+                        if (res.data.success) {
+                            this.$message.success("删除成功");
+                            this.findPage();
+                        } else {
+                            this.$message.error(res.data.msg);
+                        }
+                    }).catch((error) => {
+                        if (error == "Error: Request failed with status code 403") {
+                            this.$message.error("无操作权限");
+                        }
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+
+            },
+            //获取分类vo
+            getCategorys() {
+                axios.get("/category/getAllIdAndName").then((res) => {
+                    if (res.data.success) {
+                        this.categorys = res.data.data;
+                    } else {
+                        this.$message({
+                            message: res.data.msg,
+                            type: 'success'
+                        });
+                    }
+                }).catch((error) => {
+                    if (error == "Error: Request failed with status code 403") {
+                        this.$message.error("无操作权限");
+                    }
+                });
+            },
+            //获取标签vo
+            getTags() {
+                axios.get("/tag/getAllIdAndName").then((res) => {
+                    if (res.data.success) {
+                        this.tags = res.data.data;
+                    } else {
+                        this.$message({
+                            message: res.data.msg,
+                            type: 'success'
+                        });
+                    }
+                }).catch((error) => {
+                    if (error == "Error: Request failed with status code 403") {
+                        this.$message.error("无操作权限");
+                    }
+                });
+            },
+        }
+    });
+    Vue.use(window.VueQuillEditor);
+</script>
+</html>

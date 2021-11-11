@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--MyBatis配置文件-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zyz.blogadmin.dao.mapper.CommentMapper">
+    <!--    IPage<Article> listComment(Page<Comment> page,
+                                   String articleTitle,
+                                   String authorAccount);-->
+    <select id="listComment" resultMap="commentMap">
+        select bc.id,bc.content,bc.create_date,bc.author_id,bc.article_id
+        FROM blog_comment bc
+        <where>
+            <if test="articleTitle!=null and articleTitle!=''">
+                <bind name="articleTitle" value="'%'+articleTitle+'%'"/>
+                and bc.article_id
+                in(
+                select ba.id
+                from blog_article ba
+                where
+                ba.title like #{articleTitle})
+            </if>
+            <if test="authorAccount!=null and authorAccount!=''">
+                <bind name="authorAccount" value="'%' + authorAccount+ '%'"/>
+                and bc.author_id in
+                (
+                select bu.id
+                from blog_user bu
+                where
+                bu.account like #{authorAccount}
+                )
+            </if>
+        </where>
+    </select>
+
+    <resultMap id="commentMap" type="com.zyz.blogadmin.dao.po.Comment">
+        <id column="id" property="id"></id>
+        <id column="content" property="content"></id>
+        <id column="create_date" property="createDate"></id>
+        <id column="author_id" property="authorId"></id>
+        <id column="article_id" property="articleId"></id>
+        <id column="parent_id" property="parentId"></id>
+        <id column="to_uid" property="toUid"></id>
+        <id column="level" property="level"></id>
+        <id column="object_version" property="objectVersion"></id>
+    </resultMap>
+</mapper>

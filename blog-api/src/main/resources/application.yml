@@ -1,0 +1,56 @@
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      table-prefix: blog_
+
+server:
+  port: 8888
+
+spring:
+  #服务名称
+  application:
+    name: zyz_blog_api
+  #数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    password: 123456
+    url: jdbc:mysql://127.0.0.1:3306/blog?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    username: root
+  #redis配置
+  redis:
+    host: localhost
+    port: 6379
+  servlet:
+    #文件上传配置
+    multipart:
+      #单个文件最大值
+      max-file-size: 2MB
+      #上传文件的最大值
+      max-request-size: 20MB
+
+#七牛云图片存储服务器
+qiniu:
+  accessKey: -WG4OzNL-7CAtoOK6P7Wedw2tXaIeUCt5t1iMVD3
+  accessSecretKey: 4-eI-oy2sZMWTLgypkiKpYqL8MtLhZb8RKjr_2Ko
+
+#oss阿里对象存储
+oss:
+  #OSS连接路径
+  endpoint: oss-cn-chengdu.aliyuncs.com
+  #已经在控制台创建的bucket
+  bucketName: zyzservice
+  #相应的id和key值
+  accessKeyId: LTAI5tBFHdshzFu8NwbgLU2F
+  accessKeySecret: ksfmoXSPegMqutxpU778hOOA5WezoD
+
+#日志配置
+logging:
+  level:
+    root: info
+  config: classpath:logback-spring.xml
+
+#跨域
+crossdomainrequest:
+  request1: http://localhost:8080

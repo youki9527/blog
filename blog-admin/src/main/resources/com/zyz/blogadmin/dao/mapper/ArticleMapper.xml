@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--MyBatis配置文件-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zyz.blogadmin.dao.mapper.ArticleMapper">
+
+<!--    IPage<Article> listArticle(Page<Article> page, String title, Long categoryId, Long createDate);-->
+    <select id="listArticle" resultType="com.zyz.blogadmin.dao.po.Article">
+        SELECT
+        ba.id,
+        ba.title,
+        ba.summary,
+        ba.author_id,
+        ba.create_date,
+        ba.update_date,
+        ba.view_counts,
+        ba.comment_counts,
+        ba.weight,
+        ba.category_id
+        FROM blog_article ba
+        <where>
+            1=1 and ba.is_published=1
+            <if test="title!=null and title!=''">
+                <bind name="categoryName" value="'%'+title+'%'"></bind>
+              and  ba.title like #{title}
+            </if>
+            <if test="categoryId!=null">
+              and  ba.category_id =#{categoryId}
+            </if>
+            <if test="createStartDate!=null">
+              and  ba.create_date  <![CDATA[ >= ]]>  #{createStartDate}
+            </if>
+            <if test="createEndDate!=null">
+              and  ba.create_date <![CDATA[ <= ]]> #{createEndDate}
+            </if>
+        </where>
+    </select>
+</mapper>

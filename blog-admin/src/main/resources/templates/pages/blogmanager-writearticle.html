@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>youki博客管理后台</title>
+    <meta name="description" content="youki博客管理后台">
+    <meta name="keywords" content="youki博客管理后台">
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- Theme included stylesheets -->
+    <link href="../plugins/quill/quill.snow.css" rel="stylesheet">
+    <link href="../plugins/quill/quill.bubble.css" rel="stylesheet">
+    <!--makedown-->
+    <link rel="stylesheet" href="../css/editormd.css">
+    <!-- Core build with no theme, formatting, non-essential modules -->
+    <link href="../plugins/quill/quill.core.css" rel="stylesheet">
+    <!-- Main Quill library -->
+    <script src="../plugins/quill/quill.js"></script>
+    <!--        <script src="../plugins/quill/quill.core.js"></script>-->
+</head>
+<body>
+<div id="app">
+
+    <div class="content-header">
+        <h1>博客管理<small>写文章</small></h1>
+    </div>
+
+    <el-main>
+
+        <el-container>
+            <el-main>
+                <div class="me-write-btn">
+                    <el-button round @click="publishShow">发布</el-button>
+                    <el-button round @click="cancel">取消</el-button>
+                </div>
+            </el-main>
+        </el-container>
+
+        <el-container>
+            <el-main>
+                <div class="me-write-title">
+                    <el-input resize="none"
+                              type="textarea"
+                              autosize
+                              v-model="articleForm.title"
+                              placeholder="请输入标题"
+                              class="me-write-input">
+                    </el-input>
+                </div>
+                <div id="placeholder" style="visibility: hidden;height: 89px;display: none;"></div>
+                <div id="editormd">
+                    <!--编辑区-->
+                    <textarea class="editormd-markdown-textarea" name="id-markdown-doc"  v-model="articleForm.editor.content"></textarea>
+                    <!-- 预览区 html textarea 需要开启配置项 saveHTMLToTextarea == true -->
+                    <textarea class="editormd-html-textarea" name="id-html-code"  ></textarea>
+                </div>
+            </el-main>
+        </el-container>
+        <!--摘要 分类 标签视图发布-->
+        <el-dialog title="摘要 分类 标签" :visible.sync="publishVisible" :close-on-click-modal=false custom-class="me-dialog">
+            <el-form :model="articleForm" ref="articleForm" :rules="rules">
+                <el-form-item prop="summary">
+                    <el-input type="textarea"
+                              v-model="articleForm.summary"
+                              :rows="6"
+                              placeholder="请输入摘要">
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="文章分类" prop="category">
+                    <el-select v-model="articleForm.category" value-key="id" placeholder="请选择文章分类">
+                        <el-option v-for="c in categorys" :key="c.id" :label="c.categoryName" :value="c"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="文章标签" prop="tags">
+                    <el-checkbox-group v-model="articleForm.tags">
+                        <el-checkbox v-for="t in tags" :key="t.id" :label="t.id" name="tags">{{t.tagName}}</el-checkbox>
+                    </el-checkbox-group>
+                </el-form-item>
+                <el-form-item label="是否置顶" prop="weight">
+                        <el-switch
+                                v-model="articleForm.weight"
+                                active-text="是" inactive-text="否"
+                                @change="changeSwitch($event)"
+                                :active-value="1"
+                                :inactive-value="0">
+                        </el-switch>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="publishVisible = false">取 消</el-button>
+                <el-button type="primary" @click="publish('articleForm')">发布</el-button>
+            </div>
+        </el-dialog>
+    </el-main>
+</div>
+</body>
+<!-- 引入组件库 -->
+<script src="../js/vue.js"></script>
+<script src="../plugins/elementui/index.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<script src="../plugins/quill/vue-quill-editor.js"></script>
+<script src="../js/editormd.min.js"></script>
+<script>
+    <!--获取文章编辑页面传来的值id-->
+    var url = location.search //获取url中"?"符后的字串 ('?modFlag=business&role=1')
+    var theRequest = new Object()
+    if (url.indexOf('?') != -1) {
+        var str = url.substr(1) //substr()方法返回从参数值开始到结束的字符串；
+        var strs = str.split('&')
+        for (var i = 0; i < strs.length; i++) {
+            theRequest[strs[i].split('=')[0]] = strs[i].split('=')[1]
+        }
+        console.log(theRequest) //此时的theRequest就是我们需要的参数；
+        console.log(theRequest.type)
+    }
+    let id=theRequest.id
+    console.log("id为")
+    console.log(typeof id)
+    console.log(id);
+    // 初始化makedown编辑器
+    var myEditor;
+    $(function () {
+        myEditor = editormd("editormd", {
+            width: "90%",
+            height: 640,
+            syncScrolling: "single",
+            path: "../plugins/editormd/lib/",
+            saveHTMLToTextarea: true,
+            imageUpload : true,  //开启图片上传
+            imageFormats : ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
+            imageUploadURL : "/upload/articleimg", //上传的路径，就是mvc的controller路径
+        });
+        // myEditor.getMarkdown();       // 获取 Markdown 源码
+        // myEditor.getHTML();           // 获取 Textarea 保存的 HTML 源码
+        // myEditor.getPreviewedHTML();
+        // myEditor.getValue();
+        // myEditor.setMarkdown("");
+
+    });
+    //vue实例
+    var vue = new Vue({
+        el: '#app',
+        mounted() {
+            this.getCategorys();
+            this.getTags();
+            //编辑初始化
+            if (id!== undefined){
+                this.getArticleById(id);
+            }
+            this.editorToolBarToFixedWrapper = this.$_.throttle(this.editorToolBarToFixed, 200)
+            window.addEventListener('scroll', this.editorToolBarToFixedWrapper, false);
+        },
+        beforeDestroy() {
+            window.removeEventListener('scroll', this.editorToolBarToFixedWrapper, false)
+        },
+        data: {
+            publishVisible: false,
+            saveVisible: false,
+            categorys: [],
+            tags: [],
+            articleForm: {
+                id: '',
+                title: '',
+                summary: '',
+                category: '',
+                tags: [],
+                weight: 0,
+                editor: {
+                    content: '',
+                    contentHTML: '',
+                }
+            },
+            rules: {
+                summary: [
+                    {required: true, message: '请输入摘要', trigger: 'blur'},
+                    {max: 80, message: '不能大于80个字符', trigger: 'blur'}
+                ],
+                category: [
+                    {required: true, message: '请选择文章分类', trigger: 'change'}
+                ],
+                tags: [
+                    {type: 'array', required: true, message: '请选择标签', trigger: 'change'}
+                ]
+            }
+        },
+        methods: {
+            //编辑时获取原有数据
+            getArticleById(id) {
+                console.log("hhhhhh")
+                console.log(id)
+                let that=this;
+                axios.get("/article/detail/"+id).then((res)=>{
+                    if (res.data.success){
+                        this.$message({
+                            message: '恭喜你，加载文章成功',
+                            type: 'success'
+                        });
+                        console.log("hhhhhh123")
+                        //回显数据
+                        console.log(typeof res.data.data.body.content)
+                        console.log(res.data.data.body.content)
+                        // myEditor.setValue(res.data.data.body.content);
+                        Object.assign(that.articleForm, res.data.data)
+                        that.articleForm.editor.content = res.data.data.body.content
+                        //文章标签数据 后端传来的是tags不止包含id
+                        let tags = this.articleForm.tags.map(function (item) {
+                            return item.id;
+                        })
+                        this.articleForm.tags = tags
+
+                    }else {
+                        that.$message({message: error, type: '加载文章失败:' + data.msg, showClose: true});
+                    }
+                }).catch((error)=>{
+                    if (error == "Error: Request failed with status code 403"){
+                        loading.close();
+                        this.$message.error("无操作权限");
+                    }
+                });
+            },
+            //Loading加载
+            openFullScreen() {
+                const loading = this.$loading({
+                    lock: true,
+                    text: '发布中，请稍后...'
+                });
+                return loading;
+            },
+            //Loading关闭
+            closeFullScreen(loading){
+                loading.close();
+            },
+            //验证是否开启发布分类、标签、摘要视图
+            publishShow() {
+                this.articleForm.editor.content=myEditor.getMarkdown()
+                this.articleForm.editor.contentHTML=myEditor.getHTML()
+                if (!this.articleForm.title) {
+                    this.$message({message: '标题不能为空哦', type: 'warning', showClose: true})
+                    return
+                }
+                if (this.articleForm.title.length > 30) {
+                    this.$message({message: '标题不能大于30个字符', type: 'warning', showClose: true})
+                    return
+                }
+                if (!this.articleForm.editor.content) {
+                    console.log('内容' + this.articleForm.editor.content);       // 获取 Markdown 源码
+                    console.log('内容HTML' + this.articleForm.editor.contentHTML  )
+                    this.$message({message: '内容不能为空哦', type: 'warning', showClose: true})
+                    return
+                }
+                //开启分类、标签、摘要视图
+                this.publishVisible = true;
+            },
+            //置顶改变
+            changeSwitch:function(value){
+                console.log(value);
+                this.articleForm.weight=value
+            },
+            //发布或修改事件
+            publish(articleForm) {
+                let that = this
+                this.$refs[articleForm].validate((valid) => {
+                    //校验数据合法
+                    if (valid) {
+                        //设置标签tag对象
+                        let tags = this.articleForm.tags.map(function (item) {
+                            return {id: item};
+                        });
+                        //封装article对象
+                        let article = {
+                            id: this.articleForm.id,
+                            title: this.articleForm.title,
+                            summary: this.articleForm.summary,
+                            category: this.articleForm.category,
+                            weight: this.articleForm.weight,
+                            tags: tags,
+                            body: {
+                                content: this.articleForm.editor.content,
+                                contentHtml: this.articleForm.editor.contentHTML
+                            }
+                        }
+                        this.publishVisible = false;
+                        //加载提示
+                        this.openFullScreen();
+                        if (id== undefined){
+                            axios.post("/article/add",article).then((res)=>{
+                                if (res.data.success){
+                                    this.$message({
+                                        message: '恭喜你，发布文章成功',
+                                        type: 'success'
+                                    });
+                                    this.dialogFormVisible = false;
+                                    //请求成功关闭；
+                                    this.closeFullScreen(this.openFullScreen());
+                                }else {
+                                    //
+                                    this.closeFullScreen(this.openFullScreen());
+                                    that.$message({message: error, type: '发布文章失败:' + data.msg, showClose: true});
+                                }
+                            }).catch((error)=>{
+                                if (error == "Error: Request failed with status code 403"){
+                                    loading.close();
+                                    this.$message.error("无操作权限");
+                                }
+                            });
+                        }else {
+                            axios.post("/article/update",article).then((res)=>{
+                                if (res.data.success){
+                                    this.$message({
+                                        message: '恭喜你，修改文章成功',
+                                        type: 'success'
+                                    });
+                                    this.dialogFormVisible = false;
+                                    location.href = "blogmanager-articlemanager.html";
+                                    //请求成功关闭；
+                                    this.closeFullScreen(this.openFullScreen());
+
+                                }else {
+                                    //
+                                    this.closeFullScreen(this.openFullScreen());
+                                    that.$message({message: error, type: '修改文章失败:' + data.msg, showClose: true});
+                                }
+                            }).catch((error)=>{
+                                if (error == "Error: Request failed with status code 403"){
+                                    loading.close();
+                                    this.$message.error("无操作权限");
+                                }
+                            });
+
+                        }
+
+                    } else {
+                        return false;
+                    }
+                });
+            },
+            //取消发布或修改
+            cancel() {
+                //编辑取消
+                if (id!== undefined){
+                    this.$confirm('文章修改进不会保存, 是否继续?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        location.href = "blogmanager-articlemanager.html";
+                    })
+                }
+
+            },
+            //获取分类vo
+            getCategorys() {
+                axios.get("/category/getAllIdAndName").then((res) => {
+                    if (res.data.success) {
+                        this.categorys = res.data.data;
+                    }else {
+                        this.$message({
+                            message: res.data.msg,
+                            type: 'success'
+                        });
+                    }
+                }).catch((error) => {
+                    if (error == "Error: Request failed with status code 403") {
+                        this.$message.error("无操作权限");
+                    }
+                });
+            },
+            //获取标签vo
+            getTags() {
+                axios.get("/tag/getAllIdAndName").then((res) => {
+                    if (res.data.success) {
+                        this.tags = res.data.data;
+                    }
+                }).catch((error) => {
+                    if (error == "Error: Request failed with status code 403") {
+                        this.$message.error("无操作权限");
+                    }
+                });
+            },
+            editorToolBarToFixed() {
+                let toolbar = document.querySelector('.v-note-op');
+                let curHeight = document.documentElement.scrollTop || document.body.scrollTop;
+                if (curHeight >= 160) {
+                    document.getElementById("placeholder").style.display = "block"; //bad  用计算属性较好
+                    toolbar.classList.add("me-write-toolbar-fixed");
+                } else {
+                    document.getElementById("placeholder").style.display = "none";
+                    toolbar.classList.remove("me-write-toolbar-fixed");
+                }
+            }
+        },
+    });
+    Vue.use(window.VueQuillEditor);
+</script>
+</html>
